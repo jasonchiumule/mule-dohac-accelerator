@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:request-config name="req-dohac-apis.fly.dev" doc:name="HTTP Request configuration" doc:id="1c84a03d-c072-462f-8d2e-f74dcc381880" >
+		<http:request-connection protocol="HTTPS" host="dohac-apis.fly.dev" />
+	</http:request-config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="26f6ce6b-91c5-40d0-9d26-522ac346d68f" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="api-provider" doc:id="ced7db5b-b7dc-4673-a1da-fd9fb7ccc8b8" >
+		<http:listener doc:name="Listener" doc:id="9be24648-b8fc-462a-83e6-3c5b5be34529" config-ref="HTTP_Listener_config" path="/api/provider"/>
+		<http:request method="GET" doc:name="Request" doc:id="72eaff02-0a06-4c64-a429-857db5ed8d30" config-ref="req-dohac-apis.fly.dev" path="/api/Provider">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer mock_blahblah"
+}]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="99d5c5d4-0b9c-44c7-9698-fa4793132cdb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="api-questionnaire" doc:id="8fabf7d4-5b2b-408f-8656-2ec195045c6d" >
+		<http:listener doc:name="Listener" doc:id="4ff6ce8b-43cf-4f8e-8c0b-fe19d8ae2e33" config-ref="HTTP_Listener_config" path="/api/questionnaire"/>
+		<http:request method="GET" doc:name="Request" doc:id="d38f10a3-4cd3-45d7-85c9-b63ed170d681" config-ref="req-dohac-apis.fly.dev" path="/api/Questionnaire">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer mock_blahblah"
+}]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="94ed1d88-1d8c-4734-b380-fafecaa7f2c1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="api-registerednurse" doc:id="fdd75f1d-7f94-47fa-a5c0-8fd6c1b1146c" >
+		<http:listener doc:name="Listener" doc:id="3307c17a-0d20-413d-857b-010624c63dec" config-ref="HTTP_Listener_config" path="/api/registerednurse"/>
+		<http:request method="GET" doc:name="Request" doc:id="127d4be5-7f4e-462e-997f-03f305df1c2f" config-ref="req-dohac-apis.fly.dev" path="/api/RegisteredNurseAttendance?service=SVC-54321&amp;summary=false">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer mock_blahblah"
+}]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="8001d64c-50a9-4441-bca1-232f765b3498" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
