@@ -10,9 +10,16 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	</http:request-config>
 	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="26f6ce6b-91c5-40d0-9d26-522ac346d68f" >
 		<http:listener-connection host="0.0.0.0" port="8081" />
+		<http:listener-interceptors >
+			<http:cors-interceptor >
+				<http:origins >
+					<http:public-resource />
+				</http:origins>
+			</http:cors-interceptor>
+		</http:listener-interceptors>
 	</http:listener-config>
 	<flow name="api-provider" doc:id="ced7db5b-b7dc-4673-a1da-fd9fb7ccc8b8" >
-		<http:listener doc:name="Listener" doc:id="9be24648-b8fc-462a-83e6-3c5b5be34529" config-ref="HTTP_Listener_config" path="/api/provider"/>
+		<http:listener doc:name="Listener" doc:id="9be24648-b8fc-462a-83e6-3c5b5be34529" config-ref="HTTP_Listener_config" path="/api/Provider"/>
 		<http:request method="GET" doc:name="Request" doc:id="72eaff02-0a06-4c64-a429-857db5ed8d30" config-ref="req-dohac-apis.fly.dev" path="/api/Provider">
 			<http:headers ><![CDATA[#[output application/java
 ---
@@ -30,7 +37,7 @@ payload]]></ee:set-payload>
 		</ee:transform>
 	</flow>
 	<flow name="api-questionnaire" doc:id="8fabf7d4-5b2b-408f-8656-2ec195045c6d" >
-		<http:listener doc:name="Listener" doc:id="4ff6ce8b-43cf-4f8e-8c0b-fe19d8ae2e33" config-ref="HTTP_Listener_config" path="/api/questionnaire"/>
+		<http:listener doc:name="Listener" doc:id="4ff6ce8b-43cf-4f8e-8c0b-fe19d8ae2e33" config-ref="HTTP_Listener_config" path="/api/Questionnaire"/>
 		<http:request method="GET" doc:name="Request" doc:id="d38f10a3-4cd3-45d7-85c9-b63ed170d681" config-ref="req-dohac-apis.fly.dev" path="/api/Questionnaire">
 			<http:headers ><![CDATA[#[output application/java
 ---
@@ -48,7 +55,7 @@ payload]]></ee:set-payload>
 		</ee:transform>
 	</flow>
 	<flow name="api-registerednurse" doc:id="fdd75f1d-7f94-47fa-a5c0-8fd6c1b1146c" >
-		<http:listener doc:name="Listener" doc:id="3307c17a-0d20-413d-857b-010624c63dec" config-ref="HTTP_Listener_config" path="/api/registerednurse"/>
+		<http:listener doc:name="Listener" doc:id="3307c17a-0d20-413d-857b-010624c63dec" config-ref="HTTP_Listener_config" path="/api/RegisteredNurseAttendance"/>
 		<http:request method="GET" doc:name="Request" doc:id="127d4be5-7f4e-462e-997f-03f305df1c2f" config-ref="req-dohac-apis.fly.dev" path="/api/RegisteredNurseAttendance?service=SVC-54321&amp;summary=false">
 			<http:headers ><![CDATA[#[output application/java
 ---
@@ -57,6 +64,64 @@ payload]]></ee:set-payload>
 }]]]></http:headers>
 		</http:request>
 		<ee:transform doc:name="Transform Message" doc:id="8001d64c-50a9-4441-bca1-232f765b3498" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="api-healthcareService" doc:id="63b90f01-75ee-40c8-810e-84417867c81c" >
+		<http:listener doc:name="Listener" doc:id="47ee87e0-9d2c-4c96-a2a6-23f43a71c645" config-ref="HTTP_Listener_config" path="/api/HealthcareService"/>
+		<http:request method="GET" doc:name="Request" doc:id="b2cd78c7-43c0-45b1-839d-6322eae527a6" config-ref="req-dohac-apis.fly.dev" path="/api/HealthcareService?organization=PRV-12345">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer mock_blahblah"
+}]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="b4debad9-a1a9-4392-9312-054a0a136349" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="api-QuestionnaireResponse" doc:id="fa5e2f1f-d177-4566-b6d0-f0de74c59d9a" >
+		<http:listener doc:name="Listener" doc:id="aed7559f-6af1-491f-95f6-4ed91446005e" config-ref="HTTP_Listener_config" path="/api/QuestionnaireResponse"/>
+		<ee:transform doc:name="Transform Message" doc:id="bec52506-3bc6-4993-8032-948628b6d5d2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "resourceType": "QuestionnaireResponse",
+  "questionnaire": "QC-20230630",
+  "status": "completed",
+  "subject": {
+    "reference": "HealthcareService/SVC-54321",
+    "display": "Sunset Residential Care"
+  },
+  "author": {
+    "reference": "Organization/PRV-12345",
+    "display": "Sunset Aged Care"
+  },
+  "authored": "2025-04-10T00:23:14.583Z",
+  "item": []
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="251f4fb8-feef-46de-acbe-6fd8538c4be0" config-ref="req-dohac-apis.fly.dev" path="/api/QuestionnaireResponse">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer mock_blahblah"
+}]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="507f865d-7ad2-4b98-b87e-ca781ec02b2a" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
