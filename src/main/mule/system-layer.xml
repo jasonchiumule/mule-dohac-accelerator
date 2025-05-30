@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:request-config name="req-dohac-apis.fly.dev" doc:name="HTTP Request configuration" doc:id="1c84a03d-c072-462f-8d2e-f74dcc381880" >
+		<http:request-connection protocol="HTTPS" host="dohac-apis.fly.dev" />
+	</http:request-config>
+	<http:listener-config name="HTTP_Listener_local8081" doc:name="HTTP Listener config" doc:id="26f6ce6b-91c5-40d0-9d26-522ac346d68f" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+		<http:listener-interceptors >
+			<http:cors-interceptor >
+				<http:origins >
+					<http:public-resource />
+				</http:origins>
+			</http:cors-interceptor>
+		</http:listener-interceptors>
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_localhost8080" doc:name="HTTP Request configuration" doc:id="b42cd12b-e7e6-449f-8bcc-f3a65b75b698" >
+		<http:request-connection host="localhost" port="8080" />
+	</http:request-config>
+	<flow name="api-oauth2-register" doc:id="3fc2030d-7158-4a27-9ac7-aa8d553cd369" >
+		<http:listener doc:name="Listener" doc:id="6f5bdfee-9f57-4184-a6cd-3c6a230d85e3" config-ref="HTTP_Listener_local8081" path="/api/oauth2/register"/>
+		<set-variable value='#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	"Content-Type" : "application/json",&#10;	"client_id" : "c64484a9-6cb3-4ad0-b9bd-5563567175de",&#10;  	"client_secret" : "xxxxxxxxxxxxxx"&#10;}]' doc:name="Set authHeader" doc:id="fe64902b-5f69-42ca-a9be-ca64bb96c5b7" variableName="authHeader"/>
+		<set-variable value='#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;    "client_name": "JosieJenkins",&#10;    "client_uri": "https://svt-iam.health.gov.au/enduser",&#10;    "jwt": "[JWT_TOKEN]",&#10;    "redirect_uris": [&#10;      "https://svt-iam.health.gov.au/platform"&#10;    ],&#10;    "software_id": "SW-000003",&#10;    "software_version_id": "43431d63-e316-453b-b4b6-18da7b71a66c",&#10;    "x_509": "[X509_CERT]"&#10;  }]' doc:name="Set authBody" doc:id="c0317e51-d26e-40e3-9599-64ca14c59f61" variableName="authBody"/>
+		<http:request method="POST" doc:name="POST Request" doc:id="c72bd7d2-4e22-4272-a8fb-0a4cd5dc44a3" config-ref="HTTP_Request_localhost8080" path="/api/oauth2/registration">
+			<http:body ><![CDATA[#[vars.authBody]]]></http:body>
+			<http:headers ><![CDATA[#[output application/java
+---
+vars.authHeader]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="json output" doc:id="26fce957-902b-492e-95b1-e5fc3cc5e1a3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="api-oauth2-access-tokens-dev" doc:id="3d6ad24a-0ade-4fb9-ab5d-1ed9e9574239" >
+		<http:listener doc:name="api-oauth2-access-tokens" doc:id="6777d581-608a-41e1-a489-5bcfbaa882f0" config-ref="HTTP_Listener_local8081" path="/api/oauth2/access-tokens-dev"/>
+		<set-variable value='#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	"Content-Type" : "application/x-www-form-urlencoded"&#10;}]' doc:name="Set authHeader" doc:id="553d17bb-c6ef-4e72-9816-4fbb1723e3b8" variableName="authHeader" />
+		<set-variable value='#[%dw 2.0 &#10;output urlencoded&#10;---&#10;{&#10;    "grant_type": "client_credentials",&#10;    "client_id": "c88484a9-6cb3-4ad0-b9bd-5563567175ee",&#10;    "client_secret": "your-secret",&#10;    "scope": "dhac:b2g:all:all ACO:ABN:123"&#10;  }]' doc:name="Set authBody" doc:id="fcdcc537-1229-4712-96f7-889c21d79577" variableName="authBody" />
+		<http:request method="POST" doc:name="POST Request" doc:id="e2a7f7c2-cace-48e5-bcd3-0e9c0c9e67f1" config-ref="HTTP_Request_localhost8080" path="/api/oauth2/access-tokens">
+			<http:body ><![CDATA[#[vars.authBody]]]></http:body>
+			<http:headers ><![CDATA[#[output application/java
+---
+vars.authHeader]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="json output" doc:id="1387bb2e-6000-4c10-9e69-d4135a283305" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="api-oauth2-access-tokens" doc:id="14e8da75-9eb1-4a68-95d6-ac9316d4ec86" >
+		<http:listener doc:name="Listener" doc:id="9a5986b5-ded2-437f-bead-774012a91e10" config-ref="HTTP_Listener_local8081" path="/api/oauth2/access-tokens"/>
+		<set-variable value='#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	"Content-Type" : "application/x-www-form-urlencoded"&#10;}]' doc:name="Set authHeader" doc:id="9a04bd2e-829b-470b-87fc-62244bcc36b8" variableName="authHeader" />
+		<set-variable value='#[%dw 2.0 &#10;output urlencoded&#10;---&#10;{&#10;    "grant_type": "client_credentials",&#10;    "client_id": "c88484a9-6cb3-4ad0-b9bd-5563567175ee",&#10;    "client_secret": "your-secret",&#10;    "scope": "dhac:b2g:all:all ACO:ABN:123",&#10;    "client_assertion_type":"urn:ietf:params:oauth:client-assertion-type:jwt-bearer",&#10;    "client_assertion":"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjNjQ0ODRhOS02Y2IzLTRhZDAtYjliZC01NTYzNTY3MTc1ZGUiLCJqdGkiOiI2NjA1ODA3OC1mNDkxLTRiY2QtOWQxZS1hNzdlZjE1YjNiODMiLCJpYXQiOjE3Mzk0OTQ0MzYsImV4cCI6MTczOTQ5NTAzNiwiYXVkIjoiaHR0cHM6Ly9zdnQtaWFtLmhlYWx0aC5nb3YuYXU6NDQzL2FtL29hdXRoMi9yZWFsbXMvcm9vdC9yZWFsbXMvZG9oYWMtYXBpL2FjY2Vzc190b2tlbiIsInN1YiI6ImM2NDQ4NGE5LTZjYjMtNGFkMC1iOWJkLTU1NjM1NjcxNzVkZSJ9.DGRILi-Q8bI9oJL4rbusWU9O1u7rAlfR-pkqjiJFoOJKzBcuPA6bBwzG9ERFLppEFN9frEnqFqa6xNmBSH3AalodacQs9g6l-i2t7KB6xsGxwMGmwzGbPC_n66NY8KxbBDVm9bgkwEVGnUYVO73A-np_2fc6UVKF9_QVgVKmSE1ruAmF9iCor_mgbiNafqCQ1lANxoYSb_V8IQVlNKZ_QqUvfR96vC5ZPWtnuAPPY36P7OyHueEp_SBWFl5VlXYMSaeguw-l9_7vGO6kCiRA2T09N7l_mVK4T-XyznzFTfhQSjzqHKC6wYCrMpXlluU2G2dsd4r4kJZRk6or_R_mxA",&#10;    "scope":"openid ACO:ABN ACO:ABN:93605597126 Foundational:Organization/HealthcareService:Providers:Read Foundational:Organization/HealthcareService:Quality-Indicators:Write Foundational:Organization/HealthcareService:Quality-Indicators:Read Foundational:Organization:Providers:Read"&#10;  }]' doc:name="Set authBody" doc:id="cd092ef2-22ec-41ee-9d05-9866dbe6ea23" variableName="authBody" />
+		<http:request method="POST" doc:name="POST Request" doc:id="aca975ed-c928-44fb-8fc9-4e6f29b8a600" config-ref="HTTP_Request_localhost8080" path="/api/oauth2/access-tokens">
+			<http:body ><![CDATA[#[vars.authBody]]]></http:body>
+			<http:headers ><![CDATA[#[output application/java
+---
+vars.authHeader]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="json output" doc:id="cad38e0c-3be2-4ca7-abca-c55e31d73544" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="api-provider" doc:id="ced7db5b-b7dc-4673-a1da-fd9fb7ccc8b8" >
+		<http:listener doc:name="Listener" doc:id="9be24648-b8fc-462a-83e6-3c5b5be34529" config-ref="HTTP_Listener_local8081" path="/api/Provider/{id}"/>
+		<set-variable value="PRV-12345" doc:name="Set providerId" doc:id="8804bf30-5e60-4917-a514-f4384aa563da" variableName="providerId"/>
+		<set-variable value='#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	"Authorization" : "Bearer mock_c88484a9-6cb3-4ad0-b9bd-5563567175ee_20230720151152"&#10;}]' doc:name="Set authHeader" doc:id="897f65bd-1169-4c4e-96ac-ddd9481e0732" variableName="authHeader" />
+		<http:request method="GET" doc:name="GET Request" doc:id="72eaff02-0a06-4c64-a429-857db5ed8d30" config-ref="HTTP_Request_localhost8080" path="/api/Provider/{id}">
+			<http:headers ><![CDATA[#[output application/java
+---
+vars.authHeader]]]></http:headers>
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	"id" : vars.providerId
+}]]]></http:uri-params>
+		</http:request>
+		<ee:transform doc:name="json output" doc:id="99d5c5d4-0b9c-44c7-9698-fa4793132cdb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="api-questionnaire-get" doc:id="8fabf7d4-5b2b-408f-8656-2ec195045c6d" >
+		<http:listener doc:name="Listener" doc:id="4ff6ce8b-43cf-4f8e-8c0b-fe19d8ae2e33" config-ref="HTTP_Listener_local8081" path="/api/Questionnaire"/>
+		<set-variable value='#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	"Authorization" : "Bearer mock_c88484a9-6cb3-4ad0-b9bd-5563567175ee_20230720151152"&#10;}]' doc:name="Set authHeader" doc:id="1f8cea49-4b7f-47f7-8d39-e9859b8dbba6" variableName="authHeader" />
+		<http:request method="GET" doc:name="GET Request" doc:id="d38f10a3-4cd3-45d7-85c9-b63ed170d681" config-ref="HTTP_Request_localhost8080" path="/api/Questionnaire">
+			<http:headers ><![CDATA[#[output application/java
+---
+vars.authHeader]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="json output" doc:id="94ed1d88-1d8c-4734-b380-fafecaa7f2c1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="api-QuestionnaireResponse-post" doc:id="fa5e2f1f-d177-4566-b6d0-f0de74c59d9a">
+		<http:listener doc:name="Listener" doc:id="aed7559f-6af1-491f-95f6-4ed91446005e" config-ref="HTTP_Listener_local8081" path="/api/QuestionnaireResponse" />
+		<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  "resourceType": "QuestionnaireResponse",&#10;  "questionnaire": "QC-20230630",&#10;  "status": "completed",&#10;  "subject": {&#10;    "reference": "HealthcareService/SVC-54321",&#10;    "display": "Sunset Residential Care"&#10;  },&#10;  "author": {&#10;    "reference": "Organization/PRV-12345",&#10;    "display": "Sunset Aged Care"&#10;  },&#10;  "authored": "2025-04-10T00:23:14.583Z",&#10;  "item": []&#10;}]' doc:name="Set qBody" doc:id="097ca6c2-d94f-45d6-b8c5-526396ae1285" variableName="qBody"/>
+		<set-variable value='#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	"Authorization" : "Bearer mock_c88484a9-6cb3-4ad0-b9bd-5563567175ee_20230720151152"&#10;}]' doc:name="Set authHeader" doc:id="6a3cdbb2-7948-4a42-9688-83da580255d7" variableName="authHeader" />
+		<http:request method="POST" doc:name="POST Request" doc:id="251f4fb8-feef-46de-acbe-6fd8538c4be0" config-ref="req-dohac-apis.fly.dev" path="/api/QuestionnaireResponse">
+			<http:body ><![CDATA[#[vars.qBody]]]></http:body>
+			<http:headers><![CDATA[#[output application/java
+---
+vars.authHeader]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="json output" doc:id="507f865d-7ad2-4b98-b87e-ca781ec02b2a">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="api-registerednurse" doc:id="fdd75f1d-7f94-47fa-a5c0-8fd6c1b1146c" >
+		<http:listener doc:name="Listener" doc:id="3307c17a-0d20-413d-857b-010624c63dec" config-ref="HTTP_Listener_local8081" path="/api/RegisteredNurseAttendance"/>
+		<set-variable value='#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	"Authorization" : "Bearer mock_c88484a9-6cb3-4ad0-b9bd-5563567175ee_20230720151152"&#10;}]' doc:name="Set authHeader" doc:id="6d3951a8-ba32-4138-842b-032459fe0b60" variableName="authHeader" />
+		<http:request method="GET" doc:name="GET Request" doc:id="127d4be5-7f4e-462e-997f-03f305df1c2f" config-ref="HTTP_Request_localhost8080" path="/api/RegisteredNurseAttendance">
+			<http:headers ><![CDATA[#[output application/java
+---
+vars.authHeader]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="json output" doc:id="8001d64c-50a9-4441-bca1-232f765b3498" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="api-registerednurse-patch-id" doc:id="be58bab9-1cee-43b6-88d5-0cea61f124fb" >
+		<http:listener doc:name="Listener" doc:id="1d31a829-1e11-4707-bcad-e81ca45ed383" config-ref="HTTP_Listener_local8081" path="/api/RegisteredNurseAttendance/{id}"/>
+		<flow-ref doc:name="sub-RN-patch-id" doc:id="ad0436c7-caf1-4232-809f-674817cb22cc" name="sub-RN-patch-id"/>
+	</flow>
+	<sub-flow name="sub-RN-patch-id" doc:id="50ef85cf-afa0-4c25-be57-deb6a8665ae9" >
+		<set-variable value='#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	"Authorization" : "Bearer mock_c88484a9-6cb3-4ad0-b9bd-5563567175ee_20230720151152"&#10;}]' doc:name="Set authHeader" doc:id="0bad6598-2ef2-4b92-b082-5726d925096c" variableName="authHeader" />
+		<set-variable value="Sub-123-456" doc:name="Set uriParamId" doc:id="e59b1562-83b9-4cb2-bcf6-504e61e94cf6" variableName="uriParamId" />
+		<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  "attendanceDays": [&#10;    {&#10;      "attendanceDayStatus": "Nurse not on site",&#10;      "id": "SD-230926-1524",&#10;      "nonAttendanceTime": [&#10;        {&#10;          "alternateArrangement": "No alternate care arrangements",&#10;          "unavailableEndTime": "12:30:00",&#10;          "unavailableReason": "Temporary absence - unplanned",&#10;          "unavailableStartTime": "12:00:00"&#10;        },&#10;        {&#10;          "alternateArrangement": "No alternate care arrangements",&#10;          "unavailableEndTime": "13:30:00",&#10;          "unavailableReason": "Temporary absence - unplanned",&#10;          "unavailableStartTime": "13:00:00"&#10;        }&#10;      ],&#10;      "reportingDate": "2023-11-01"&#10;    },&#10;    {&#10;      "attendanceDayStatus": "Nurse On Site",&#10;      "id": "SD-230926-1525",&#10;      "reportingDate": "2023-11-02"&#10;    }&#10;  ],&#10;  "nominatedServiceIdentifier": {&#10;    "system": "https://api.health.gov.au/integrationID",&#10;    "use": "official",&#10;    "value": "SRV-1111"&#10;  },&#10;  "reportingPeriod": {&#10;    "end": "2023-11-30",&#10;    "start": "2023-11-01"&#10;  },&#10;  "resourceType": "RegisteredNurseAttendance",&#10;  "submissionStatus": "In Progress"&#10;}]' doc:name="Set patchBody" doc:id="1fe36928-7cbe-482d-86d1-254aef5bd387" variableName="patchBody" />
+		<ee:transform doc:name="json output" doc:id="3a3974a4-cd88-412d-b848-ca0a272c19a5">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="PATCH" doc:name="PATCH Request" doc:id="b4b487bf-0cb8-44b9-ab6e-a2d9377ab0b0" config-ref="HTTP_Request_localhost8080" path="/api/RegisteredNurseAttendance/{id}">
+			<http:body><![CDATA[#[vars.patchBody]]]></http:body>
+			<http:headers><![CDATA[#[vars.authHeader]]]></http:headers>
+			<http:uri-params><![CDATA[#[output application/java
+---
+{
+	"id" : vars.uriParamId
+}]]]></http:uri-params>
+		</http:request>
+	</sub-flow>
+	<flow name="api-healthcareService" doc:id="63b90f01-75ee-40c8-810e-84417867c81c" >
+		<http:listener doc:name="Listener" doc:id="47ee87e0-9d2c-4c96-a2a6-23f43a71c645" config-ref="HTTP_Listener_local8081" path="/api/HealthcareService"/>
+		<set-variable value='#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	"Authorization" : "Bearer mock_c88484a9-6cb3-4ad0-b9bd-5563567175ee_20230720151152"&#10;}]' doc:name="Set authHeader" doc:id="139ce5fc-73ab-475e-88fd-4feb82d846ef" variableName="authHeader" />
+		<http:request method="GET" doc:name="GET Request" doc:id="b2cd78c7-43c0-45b1-839d-6322eae527a6" config-ref="HTTP_Request_localhost8080" path="/api/HealthcareService">
+			<http:headers ><![CDATA[#[output application/java
+---
+vars.authHeader]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="json output" doc:id="b4debad9-a1a9-4392-9312-054a0a136349" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="api-healthcareService-id" doc:id="4d931897-9e7c-4024-bdc4-841136c72b47" >
+		<http:listener doc:name="Listener" doc:id="51df64d7-a520-4e53-8273-018a1470bf8c" config-ref="HTTP_Listener_local8081" path="/api/HealthcareService/{id}"/>
+		<set-variable value='#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	"Authorization" : "Bearer mock_c88484a9-6cb3-4ad0-b9bd-5563567175ee_20230720151152"&#10;}]' doc:name="Set authHeader" doc:id="84447020-396e-42ed-ae05-ce70b9e80831" variableName="authHeader" />
+		<set-variable value="PRV-12345" doc:name="Set queryParamOrganisation" doc:id="dee1a33c-5895-4848-839e-19cbe9169c25" variableName="queryParamOrganisation"/>
+		<http:request method="GET" doc:name="GET Request" doc:id="5690dcba-f187-41ef-9729-3e324fe85fb6" config-ref="HTTP_Request_localhost8080" path="/api/HealthcareService">
+			<http:headers ><![CDATA[#[%dw 2.0
+output application/java
+---
+vars.authHeader]]]></http:headers>
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"organization" : vars.queryParamOrganisation
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="json output" doc:id="17f2860d-3ca6-4157-b180-c8513e3dc91c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

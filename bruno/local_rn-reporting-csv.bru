@@ -1,0 +1,15 @@
+meta {
+  name: local_rn-reporting-csv
+  type: http
+  seq: 14
+}
+
+post {
+  url: http://localhost:8081/api/rn-reporting-csv
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  csv: @file(/Users/jason.chiu/Downloads/flattened_attendance_data.csv) @contentType(application/csv)
+}

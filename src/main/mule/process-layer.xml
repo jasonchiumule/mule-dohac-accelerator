@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="api-rn-reporting-csv" doc:id="89ab2c50-91b2-4ab8-93f6-e1244c34bfc2" >
+		<http:listener doc:name="Listener" doc:id="4f5f4139-74ae-481c-8ba7-f6e5c046e796" config-ref="HTTP_Listener_local8081" path="/api/rn-reporting-csv"/>
+		<ee:transform doc:name="csv to json" doc:id="5779deb6-7688-492e-a7a3-82065889b745" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+// Assumes payload.content is not empty and has at least one item.
+// Shared fields are taken from the first item in the content array.
+var payloadContent = payload.parts.csv.content
+var firstItem = payloadContent[0] 
+---
+{
+    // Shared fields extracted from the first item of the input 'content' array
+    activelyRecruiting: firstItem.activelyRecruiting == "True",
+    id: firstItem.id,
+    nominatedServiceIdentifier: {
+        system: firstItem.nominatedServiceIdentifier_system,
+        use: firstItem.nominatedServiceIdentifier_use,
+        value: firstItem.nominatedServiceIdentifier_value
+    },
+    reporterDeclaration: firstItem.reporterDeclaration == "True",
+    reportingPeriod: {
+        end: firstItem.reportingPeriod_end,
+        start: firstItem.reportingPeriod_start
+    },
+    resourceType: firstItem.resourceType,
+    submissionStatus: firstItem.submissionStatus,
+    transferHealthFacilityOther: firstItem.transferHealthFacilityOther,
+    transferHealthFacilityType: firstItem.transferHealthFacilityType,
+    transferOption: firstItem.transferOption == "True",
+    vacancyFilled: firstItem.vacancyFilled == "True",
+    vacancyOpenDuration: firstItem.vacancyOpenDuration,
+
+    // The 'content' array is transformed into the 'attendanceDays' array
+    attendanceDays: payloadContent map (item, index) -> {
+        attendanceDayStatus: item.attendanceDay_attendanceDayStatus,
+        id: item.attendanceDay_id,
+        reportingDate: item.attendanceDay_reportingDate,
+        // Conditionally include the 'nonAttendanceTime' array
+        // It will only be added if 'item.nonAttendanceTime_id' is present
+        (nonAttendanceTime: [{
+            absenceType: item.nonAttendanceTime_absenceType,
+            accessToClinicalDocumentation: item.nonAttendanceTime_accessToClinicalDocumentation == "True",
+            accessToSupport: item.nonAttendanceTime_accessToSupport,
+            authorityDelegatedTo: item.nonAttendanceTime_authorityDelegatedTo,
+            id: item.nonAttendanceTime_id,
+            unavailableEndTime: item.nonAttendanceTime_unavailableEndTime,
+            unavailableStartTime: item.nonAttendanceTime_unavailableStartTime
+        }]) if (item.nonAttendanceTime_id != null) 
+    }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="eb6c6e99-b5e2-42fb-932b-53bf6bb903ed" message="#[payload]"/>
+		<flow-ref doc:name="Flow Reference" doc:id="891332ff-bcd4-4d9e-99e8-f2ee2e7d0db3" name="sub-RN-patch-id"/>
+	</flow>
+</mule>

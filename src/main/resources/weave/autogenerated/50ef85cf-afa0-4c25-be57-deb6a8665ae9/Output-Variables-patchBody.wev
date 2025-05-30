@@ -1,0 +1,23 @@
+%dw 2.0
+
+type auto_50ef85cf_afa0_4c25_be57_deb6a8665ae9_Output_Variables_patchBody = {|
+  attendanceDays: Array<{|    attendanceDayStatus: String,     id: String,     nonAttendanceTime: Array<{|      alternateArrangement: String,       unavailableEndTime: String,       unavailableReason: String,       unavailableStartTime: String    |}>, 
+    reportingDate: String
+  |} | {|
+    attendanceDayStatus: String, 
+    id: String, 
+    reportingDate: String
+  |}>, 
+  nominatedServiceIdentifier: {|
+    system: String, 
+    use: String, 
+    value: String
+  |}, 
+  reportingPeriod: {|
+    end: String, 
+    start: String
+  |}, 
+  resourceType: String, 
+  submissionStatus: String
+|}
+
